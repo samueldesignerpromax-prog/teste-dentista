@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clínica Odontológica</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f7ff; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); padding: 20px; }
+        h1 { color: #1a5f7a; display: flex; align-items: center; gap: 10px; }
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn { background: #1a5f7a; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; }
+        .btn:hover { background: #154a60; }
+        #chat-container { border: 1px solid #ddd; border-radius: 12px; padding: 10px; height: 400px; display: flex; flex-direction: column; }
+        #chat-messages { flex: 1; overflow-y: auto; padding: 10px; background: #f9f9f9; border-radius: 8px; margin-bottom: 10px; }
+        .msg { padding: 8px 12px; margin: 5px 0; border-radius: 20px; max-width: 80%; word-wrap: break-word; }
+        .msg.user { background: #1a5f7a; color: white; align-self: flex-end; }
+        .msg.bot { background: #e9ecef; color: #333; align-self: flex-start; }
+        .input-area { display: flex; gap: 10px; }
+        #chat-input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ccc; }
+        #chat-input:focus { outline: none; border-color: #1a5f7a; }
+        button { padding: 10px 20px; background: #1a5f7a; color: white; border: none; border-radius: 20px; cursor: pointer; }
+        button:hover { background: #154a60; }
+        .action-btn { margin-top: 10px; display: inline-block; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-actions">
+        <h1>🦷 Clínica Sorriso</h1>
+        <a href="/agendar" class="btn">📅 Agendar</a>
+    </div>
+    <h2>💬 Converse com DentBot</h2>
+    <div id="chat-container">
+        <div id="chat-messages"></div>
+        <div class="input-area">
+            <input type="text" id="chat-input" placeholder="Digite sua mensagem...">
+            <button onclick="enviarMensagem()">Enviar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const messagesDiv = document.getElementById('chat-messages');
+    const input = document.getElementById('chat-input');
+
+    function adicionarMensagem(remetente, texto, classe) {
+        const div = document.createElement('div');
+        div.className = `msg ${classe}`;
+        div.innerHTML = `<strong>${remetente}:</strong> ${texto}`;
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    async function enviarMensagem() {
+        const msg = input.value.trim();
+        if (!msg) return;
+        adicionarMensagem('Você', msg, 'user');
+        input.value = '';
+
+        try {
+            const resp = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mensagem: msg })
+            });
+            const data = await resp.json();
+            adicionarMensagem('DentBot', data.resposta || 'Sem resposta', 'bot');
+            if (data.acao === 'agendado') {
+                // Mostrar um alerta ou redirecionar
+                alert('Agendamento realizado com sucesso!');
+            }
+        } catch (error) {
+            adicionarMensagem('DentBot', 'Erro de conexão.', 'bot');
+        }
+    }
+
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') enviarMensagem();
+    });
+</script>
+</body>
+</html>
