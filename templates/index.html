@@ -1,0 +1,35 @@
+<div id="chat-container">
+    <div id="chat-messages"></div>
+    <input type="text" id="chat-input" placeholder="Digite sua mensagem...">
+    <button onclick="enviarMensagem()">Enviar</button>
+</div>
+
+<script>
+function enviarMensagem() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+    adicionarMensagem('Você', msg);
+    input.value = '';
+
+    fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mensagem: msg })
+    })
+    .then(res => res.json())
+    .then(data => {
+        adicionarMensagem('DentBot', data.resposta);
+    })
+    .catch(err => {
+        adicionarMensagem('DentBot', 'Erro ao conectar.');
+    });
+}
+
+function adicionarMensagem(remetente, texto) {
+    const div = document.getElementById('chat-messages');
+    const p = document.createElement('p');
+    p.innerHTML = `<strong>${remetente}:</strong> ${texto}`;
+    div.appendChild(p);
+}
+</script>
