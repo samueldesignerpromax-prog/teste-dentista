@@ -21,5 +21,5 @@ class Agendamento(db.Model):
     dentista_id = db.Column(db.Integer, db.ForeignKey('dentista.id'))
     servico_id = db.Column(db.Integer, db.ForeignKey('servico.id'))
     data_hora = db.Column(db.DateTime, nullable=False)
-    status = db.Column(db.String(20), default='agendado')  # agendado, confirmado, cancelado
+    status = db.Column(db.String(20), default='agendado')
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
