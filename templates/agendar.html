@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendar Consulta</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f7ff; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; border-radius: 16px; padding: 30px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        label { display: block; margin: 15px 0 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; }
+        button { background: #1a5f7a; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; margin-top: 20px; }
+        button:hover { background: #154a60; }
+        .resultado { margin-top: 20px; padding: 10px; border-radius: 8px; }
+        .sucesso { background: #d4edda; color: #155724; }
+        .erro { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📅 Novo Agendamento</h1>
+    <form id="formAgendamento">
+        <label>Nome completo *</label>
+        <input type="text" id="nome" required>
+        <label>Email</label>
+        <input type="email" id="email">
+        <label>Telefone *</label>
+        <input type="text" id="telefone" required>
+        <label>Dentista *</label>
+        <select id="dentista_id" required></select>
+        <label>Serviço *</label>
+        <select id="servico_id" required></select>
+        <label>Data *</label>
+        <input type="date" id="data" required>
+        <label>Horário *</label>
+        <select id="horario" required><option value="">Selecione a data primeiro</option></select>
+        <button type="submit">Agendar</button>
+    </form>
+    <div id="resultado"></div>
+</div>
+
+<script>
+    // Carregar dentistas e serviços
+    async function carregarOpcoes() {
+        const dentistas = await fetch('/api/dentistas').then(r => r.json());
+        const servicos = await fetch('/api/servicos').then(r => r.json());
+        const selectDent = document.getElementById('dentista_id');
+        dentistas.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.id;
+            opt.text = `${d.nome} (${d.especialidade})`;
+            selectDent.appendChild(opt);
+        });
+        const selectServ = document.getElementById('servico_id');
+        servicos.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.text = `${s.nome} (${s.duracao}min)`;
+            selectServ.appendChild(opt);
+        });
+    }
+    carregarOpcoes();
+
+    // Carregar horários ao mudar data ou dentista
+    const dataInput = document.getElementById('data');
+    const dentistaSelect = document.getElementById('dentista_id');
+    const horarioSelect = document.getElementById('horario');
+
+    async function carregarHorarios() {
+        const data = dataInput.value;
+        const dentistaId = dentistaSelect.value;
+        if (!data || !dentistaId) {
+            horarioSelect.innerHTML = '<option value="">Selecione data e dentista</option>';
+            return;
+        }
+        const resp = await fetch(`/api/horarios?data=${data}&dentista_id=${dentistaId}`);
+        const dados = await resp.json();
+        horarioSelect.innerHTML = '';
+        dados.horarios.forEach(h => {
+            const opt = document.createElement('option');
+            opt.value = h;
+            opt.text = h;
+            horarioSelect.appendChild(opt);
+        });
+    }
+
+    dataInput.addEventListener('change', carregarHorarios);
+    dentistaSelect.addEventListener('change', carregarHorarios);
+
+    // Enviar formulário
+    document.getElementById('formAgendamento').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const dados = {
+            cliente_nome: document.getElementById('nome').value,
+            cliente_email: document.getElementById('email').value,
+            cliente_telefone: document.getElementById('telefone').value,
+            dentista_id: document.getElementById('dentista_id').value,
+            servico_id: document.getElementById('servico_id').value,
+            data_hora: `${document.getElementById('data').value}T${document.getElementById('horario').value}`
+        };
+        try {
+            const resp = await fetch('/api/agendar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            });
+            const result = await resp.json();
+            const div = document.getElementById('resultado');
+            if (resp.ok) {
+                div.className = 'resultado sucesso';
+                div.innerHTML = `✅ Agendamento realizado! ID: ${result.id}`;
+            } else {
+                div.className = 'resultado erro';
+                div.innerHTML = `❌ Erro: ${result.detail || 'Tente novamente'}`;
+            }
+        } catch (err) {
+            document.getElementById('resultado').innerHTML = '❌ Erro de conexão.';
+        }
+    });
+</script>
+</body>
+</html>
